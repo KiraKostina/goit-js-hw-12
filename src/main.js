@@ -44,35 +44,34 @@ const spiner = new Spinner(opts);
 let page = 1;
 let searchQuery = '';
 
-function handleSubmit(e) {
+async function handleSubmit(e) {
   e.preventDefault();
   spinerPlay();
   list.innerHTML = '';
   page = 1;
   searchQuery = e.target['user-search-query'].value.trim();
-    getPhotos(searchQuery, page)
-        .then(res => {
-            if (res.hits.length === 0) {
-                loadMorebtn.classList.add('is-hidden');
-                return iziToast.error({
-                    message:
-                        'Sorry, there are no images matching your search query. Please try again!',
-                    position: 'topRight',
-                });
-            }
-            lightbox.refresh();
-            list.innerHTML = createMarkup(res.hits);
-            lightbox.refresh();
-             if (res.total > 15) {
-        loadMorebtn.classList.remove('is-hidden');
-      }
-        })
-        .catch(error => {
-            console.log(error);
-        })
-        .finally(() => {
-            spinerStop();
-        });
+  try {
+    const res = await getPhotos(searchQuery, page);
+    if (res.hits.length === 0) {
+      loadMorebtn.classList.add('is-hidden');
+      return iziToast.error({
+        message:
+          'Sorry, there are no images matching your search query. Please try again!',
+        position: 'topRight',
+      });
+    }
+    lightbox.refresh();
+    list.innerHTML = createMarkup(res.hits);
+    lightbox.refresh();
+    if (res.total > 15) {
+      loadMorebtn.classList.remove('is-hidden');
+    }
+  } catch (error) {
+    console.log(error);
+  }
+  finally {
+    spinerStop();
+  }
 }
 
 
@@ -86,12 +85,12 @@ function spinerStop() {
   target.classList.add('is-hidden');
 }
 
-function handleClick() {
+async function handleClick() {
   spinerPlay();
   page += 1;
-  getPhotos(searchQuery, page)
-    .then(res => {
-      console.log(res.total);
+  try {
+    const res = await getPhotos(searchQuery, page)
+        console.log(res.total);
       const lastPage = Math.ceil(res.total / 15);
         list.insertAdjacentHTML('beforeend', createMarkup(res.hits));
         lightbox.refresh();
@@ -103,18 +102,16 @@ function handleClick() {
         top: cardHeight * 2,
         behavior: 'smooth',
       });
-      if (lastPage === page) {
+      if (lastPage <= page) {
         loadMorebtn.classList.add('is-hidden');
         iziToast.info({
           message: "We're sorry, but you've reached the end of search results.",
           position: 'topLeft',
         });
       }
-    })
-    .catch(error => {
-      console.log(error);
-    })
-    .finally(() => {
+  } catch (error) {
+     console.log(error);
+  } finally {
       spinerStop();
-    });
+    };
 }
